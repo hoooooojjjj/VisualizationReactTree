@@ -1,32 +1,32 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import FolderSelector from "./components/FolderSelector";
+import ComponentFlow from "./components/ComponentFlow";
+import { ParsedComponent } from "./utils/parseProject";
 
 const App: React.FC = () => {
-  const [uploadedFiles, setUploadedFiles] = React.useState<string[]>([]);
+  const [projectTree, setProjectTree] = React.useState<
+    ParsedComponent[] | null
+  >(null);
 
   const handleFolderSelected = async (folderPath: string) => {
     console.log("선택된 폴더 경로:", folderPath);
-    // IPC를 통해 폴더 내 파일 목록을 읽어옵니다.
+    // IPC를 통해 폴더 내 파일 목록을 가져옵니다.
     const files: string[] = await window.electronAPI.readFolder(folderPath);
     console.log("업로드된 파일 목록:", files);
-    setUploadedFiles(files);
+    // 파일 목록을 기반으로 컴포넌트 트리 파싱 (메인 프로세스에서 실행)
+    const tree: ParsedComponent[] = await window.electronAPI.parseProject(
+      files
+    );
+    console.log("파싱된 컴포넌트 트리:", tree);
+    setProjectTree(tree);
   };
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>폴더 선택 및 업로드 기능 데모</h1>
+      <h1>컴포넌트 트리 파싱 및 인터랙티브 시각화</h1>
       <FolderSelector onFolderSelected={handleFolderSelected} />
-      {uploadedFiles.length > 0 && (
-        <div>
-          <h2>업로드된 파일 목록:</h2>
-          <ul>
-            {uploadedFiles.map((file, index) => (
-              <li key={index}>{file}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {projectTree && <ComponentFlow tree={projectTree} />}
     </div>
   );
 };

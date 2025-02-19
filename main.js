@@ -1,6 +1,17 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
-const { readFolderRecursive } = require("./readFolder");
+
+// 절대 경로를 사용하여 컴파일된 모듈을 불러옵니다.
+const readFolderPath = path.join(__dirname, "dist", "utils", "readFolder.js");
+const { readFolderRecursive } = require(readFolderPath);
+
+const parseProjectPath = path.join(
+  __dirname,
+  "dist",
+  "utils",
+  "parseProject.js"
+);
+const { parseProject } = require(parseProjectPath);
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -43,6 +54,11 @@ ipcMain.handle("dialog:openFolder", async () => {
 // 새로 추가: 폴더 내 파일 목록 읽기 IPC
 ipcMain.handle("fs:readFolder", async (event, folderPath) => {
   return readFolderRecursive(folderPath);
+});
+
+// 새로 추가: 파일 목록을 기반으로 컴포넌트 트리 파싱 IPC
+ipcMain.handle("parse:project", async (event, filePaths) => {
+  return parseProject(filePaths);
 });
 
 app.on("window-all-closed", () => {
