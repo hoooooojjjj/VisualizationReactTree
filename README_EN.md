@@ -2,7 +2,7 @@
 
 [English](README_EN.md) | [한국어](README_KO.md)
 
-**VisualizationReactTree** is a React application that parses the component tree of your React or Next.js project and visualizes it in an interactive diagram format.  
+**VisualizationReactTree** is a React application that parses the component tree of your React project and visualizes it in an interactive diagram format.  
 This project provides a user experience similar to FigJam and supports features such as node dragging, multi-selection, and zoom in/out.
 
 ---
@@ -11,7 +11,7 @@ This project provides a user experience similar to FigJam and supports features 
 
 1. **Folder Selection and Upload**
 
-   - Users can click the "Select Folder" button to upload the root directory of their React or Next project.
+   - Users can click the "Select Folder" button to upload the root directory of their React project.
    - The uploaded file list is read using the Electron API through IPC (Inter-Process Communication).
 
 2. **Component Tree Parsing**
@@ -78,7 +78,7 @@ This project provides a user experience similar to FigJam and supports features 
 1. Folder Selection
 
    - Click the "Select Folder" button at the top of the application.
-   - Select the root directory of your React or Next project from the local file system through the Electron API.
+   - Select the root directory of your React from the local file system through the Electron API.
 
 2. Component Tree Parsing and Visualization
 
