@@ -9,6 +9,18 @@
 
 ---
 
+### Folder Tree
+
+![folder-tree](img/folder-tree.png)
+
+### Component Tree
+
+![component-tree](img/components-tree.png)
+
+### Demo
+
+![demo](img/demo.gif)
+
 Please select your preferred language:
 
 - [English Documentation](README_EN.md)
