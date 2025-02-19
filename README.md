@@ -3,7 +3,7 @@
 
 <div align="center">
   <h1>VisualizationReactTree</h1>
-  <p>React/Next.js Component Tree Visualization Tool</p>
+  <p>React Component Tree Visualization Tool</p>
 </div>
 
 ---
