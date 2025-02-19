@@ -4,169 +4,255 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
+  Node as RFNode,
+  Edge as RFEdge,
 } from "react-flow-renderer";
 import { ParsedComponent } from "../utils/parseProject";
 
-interface ComponentFlowProps {
-  tree: ParsedComponent[];
-  verticalLayout?: boolean;
+/*
+  이 컴포넌트는 ParsedComponent 배열(full tree)을 받아, filePath에서 '/src' 접두어를 제거한 후
+  계층 트리(ParsedRoute)를 구성합니다.
+  prop으로 activeNode가 전달되면, 해당 노드(filePath가 일치하는)의 서브트리만 표시합니다.
+  onBack 콜백이 제공되면 Back 버튼을 표시하여 전체 트리(또는 상위 노드)로 복귀하도록 합니다.
+*/
+
+// '/src' 접두어 제거 (프로젝트 최상위 폴더 아래, src 하위부터 시작)
+const trimSrcPrefix = (filePath: string): string => {
+  const srcIndex = filePath.indexOf("/src");
+  if (srcIndex >= 0) {
+    const trimmed = filePath.substring(srcIndex + 4);
+    return trimmed === "" ? "/" : trimmed;
+  }
+  return filePath;
+};
+
+export interface ParsedRoute {
+  id: string; // 변환된 filePath (예: "/components/Button.tsx")
+  path: string;
+  children: ParsedRoute[];
+  original: ParsedComponent;
 }
 
-interface FlowNode {
-  id: string;
+// 재귀적으로 ParsedComponent를 ParsedRoute로 변환 (사이클 방지 포함)
+const convertToRouteHelper = (
+  component: ParsedComponent,
+  ancestors: Set<string>
+): ParsedRoute => {
+  const trimmedPath = trimSrcPrefix(component.filePath);
+  if (ancestors.has(trimmedPath)) {
+    console.warn(`Cycle detected on ${trimmedPath}`);
+    return {
+      id: trimmedPath,
+      path: trimmedPath,
+      original: component,
+      children: [],
+    };
+  }
+  const newAncestors = new Set(ancestors);
+  newAncestors.add(trimmedPath);
+  return {
+    id: trimmedPath,
+    path: trimmedPath,
+    original: component,
+    children: component.children.map((child) =>
+      convertToRouteHelper(child, newAncestors)
+    ),
+  };
+};
+
+const convertToRoute = (component: ParsedComponent): ParsedRoute =>
+  convertToRouteHelper(component, new Set());
+
+// 평면화: 중첩된 모든 ParsedRoute를 하나의 배열로 모읍니다.
+const flattenRoutes = (routes: ParsedRoute[]): ParsedRoute[] => {
+  return routes.reduce((acc, route) => {
+    acc.push(route);
+    if (route.children && route.children.length > 0) {
+      acc.push(...flattenRoutes(route.children));
+    }
+    return acc;
+  }, [] as ParsedRoute[]);
+};
+
+// 평면 배열을 "/" 기준 경로 트리로 구성합니다.
+const buildRouteTree = (flatRoutes: ParsedRoute[]): ParsedRoute[] => {
+  const root: ParsedRoute = {
+    id: "/",
+    path: "/",
+    children: [],
+    original: {} as ParsedComponent,
+  };
+  flatRoutes.forEach((route) => {
+    if (route.path === "/") return;
+    // 예: "/components/Button.tsx" → [ "components", "Button.tsx" ]
+    const parts = route.path.split("/").filter(Boolean);
+    let current = root;
+    let accumulatedPath = "";
+    parts.forEach((part) => {
+      accumulatedPath += "/" + part;
+      let child = current.children.find(
+        (child) => child.id === accumulatedPath
+      );
+      if (!child) {
+        child = {
+          id: accumulatedPath,
+          path: accumulatedPath,
+          children: [],
+          original: route.original,
+        };
+        current.children.push(child);
+      }
+      current = child;
+    });
+  });
+  return [root];
+};
+
+// ReactFlow에서 사용할 Node와 Edge 타입
+interface FlowNode extends RFNode {
   data: { label: string };
   position: { x: number; y: number };
 }
 
-interface FlowEdge {
-  id: string;
-  source: string;
-  target: string;
-}
+interface FlowEdge extends RFEdge {}
 
-const generateVerticalFlowElements = (
-  components: ParsedComponent[]
+// vertical layout: 깊이에 따라 y좌표, DFS 순회 기준으로 x좌표를 배치합니다.
+const generateVerticalFlowElementsFromTree = (
+  nodesTree: ParsedRoute[]
 ): { nodes: FlowNode[]; edges: FlowEdge[] } => {
   const nodes: FlowNode[] = [];
   const edges: FlowEdge[] = [];
-  let currentX = 0;
-  const horizontalSpacing = 150;
-  const verticalSpacing = 150;
-  const positions: Record<string, { x: number; y: number }> = {};
-  const nodeMap: Record<string, ParsedComponent> = {};
+  let yCounter = 0;
+  const xSpacing = 200;
+  const ySpacing = 100;
 
-  // 첫번째 순회: 사이클 방지를 위한 visitedNodes를 사용하여 모든 노드를 수집합니다.
-  const visitedNodes = new Set<string>();
-  const collectNodes = (node: ParsedComponent) => {
-    if (visitedNodes.has(node.id)) return;
-    visitedNodes.add(node.id);
-    nodeMap[node.id] = node;
-    node.children.forEach((child) => collectNodes(child));
-  };
-  components.forEach((root) => {
-    collectNodes(root);
-  });
-
-  const visitedForLayout = new Set<string>();
-  function layoutNode(node: ParsedComponent, depth: number): number {
-    if (visitedForLayout.has(node.id)) {
-      return positions[node.id]?.x || currentX * horizontalSpacing;
-    }
-    visitedForLayout.add(node.id);
-    if (!node.children || node.children.length === 0) {
-      const x = currentX * horizontalSpacing;
-      currentX++;
-      positions[node.id] = { x, y: depth * verticalSpacing };
-      return x;
-    } else {
-      const childXs = node.children.map((child) =>
-        layoutNode(child, depth + 1)
-      );
-      const x = (Math.min(...childXs) + Math.max(...childXs)) / 2;
-      positions[node.id] = { x, y: depth * verticalSpacing };
-      return x;
-    }
-  }
-  components.forEach((root) => {
-    layoutNode(root, 0);
-  });
-
-  Object.entries(positions).forEach(([id, pos]) => {
+  const traverse = (node: ParsedRoute, depth: number) => {
     nodes.push({
-      id,
-      position: pos,
-      data: { label: nodeMap[id].name },
+      id: node.id,
+      data: {
+        label: node.id === "/" ? "/" : node.id.split("/").pop() || node.path,
+      },
+      position: { x: depth * xSpacing, y: yCounter * ySpacing },
     });
-  });
-
-  // 엣지 생성시에도 사이클을 방지하기 위해 visitedNodes 집합을 활용합니다.
-  const visitedEdges = new Set<string>();
-  const traverseEdges = (node: ParsedComponent, visited: Set<string>) => {
-    if (visited.has(node.id)) return;
-    visited.add(node.id);
+    yCounter++;
     node.children.forEach((child) => {
-      const edgeId = `${node.id}-${child.id}`;
-      if (!visitedEdges.has(edgeId)) {
-        visitedEdges.add(edgeId);
-        edges.push({
-          id: edgeId,
-          source: node.id,
-          target: child.id,
-        });
-      }
-      traverseEdges(child, visited);
-    });
-  };
-  components.forEach((root) => traverseEdges(root, new Set()));
-
-  return { nodes, edges };
-};
-
-const generateHorizontalFlowElements = (
-  components: ParsedComponent[]
-): { nodes: FlowNode[]; edges: FlowEdge[] } => {
-  const nodes: FlowNode[] = [];
-  const edges: FlowEdge[] = [];
-  const visited = new Set<string>();
-  let yOffset = 0;
-  const traverse = (comp: ParsedComponent, depth: number, posY: number) => {
-    if (visited.has(comp.id)) return;
-    visited.add(comp.id);
-    nodes.push({
-      id: comp.id,
-      data: { label: comp.name },
-      position: { x: depth * 200, y: posY },
-    });
-    let childPosY = posY + 100;
-    comp.children.forEach((child, childIdx) => {
       edges.push({
-        id: `${comp.id}-${child.id}-${childIdx}`,
-        source: comp.id,
+        id: `${node.id}-${child.id}`,
+        source: node.id,
         target: child.id,
       });
-      traverse(child, depth + 1, childPosY);
-      childPosY += 100;
+      traverse(child, depth + 1);
     });
   };
 
-  components.forEach((comp) => {
-    traverse(comp, 0, yOffset);
-    yOffset += 200;
-  });
-
+  nodesTree.forEach((root) => traverse(root, 0));
   return { nodes, edges };
 };
+
+// horizontal layout: x좌표, y좌표 배치를 다르게 처리합니다.
+const generateHorizontalFlowElementsFromTree = (
+  nodesTree: ParsedRoute[]
+): { nodes: FlowNode[]; edges: FlowEdge[] } => {
+  const nodes: FlowNode[] = [];
+  const edges: FlowEdge[] = [];
+  let xCounter = 0;
+  const xSpacing = 200;
+  const ySpacing = 150;
+
+  const traverse = (node: ParsedRoute, depth: number) => {
+    nodes.push({
+      id: node.id,
+      data: {
+        label: node.id === "/" ? "/" : node.id.split("/").pop() || node.path,
+      },
+      position: { x: xCounter * xSpacing, y: depth * ySpacing },
+    });
+    xCounter++;
+    node.children.forEach((child) => {
+      edges.push({
+        id: `${node.id}-${child.id}`,
+        source: node.id,
+        target: child.id,
+      });
+      traverse(child, depth + 1);
+    });
+  };
+
+  nodesTree.forEach((root) => traverse(root, 0));
+  return { nodes, edges };
+};
+
+interface ComponentFlowProps {
+  tree: ParsedComponent[]; // 전체 ParsedComponent 배열
+  activeNode?: ParsedComponent | null; // 부모에서 선택한 노드 (없으면 전체 트리 표시)
+  onBack?: () => void; // Back 버튼 클릭 시 호출
+  verticalLayout?: boolean;
+}
 
 const ComponentFlow: React.FC<ComponentFlowProps> = ({
   tree,
+  activeNode,
+  onBack,
   verticalLayout = false,
 }) => {
+  // 전체 ParsedComponent 배열을 ParsedRoute 배열로 변환
+  const convertedRoutes = useMemo(() => tree.map(convertToRoute), [tree]);
+  const flatRoutes = useMemo(
+    () => flattenRoutes(convertedRoutes),
+    [convertedRoutes]
+  );
+  const hierarchicalTree = useMemo(
+    () => buildRouteTree(flatRoutes),
+    [flatRoutes]
+  );
+
+  // activeNode prop이 있으면 해당 노드(filePath가 일치하는)의 서브트리만 사용합니다.
+  const displayedTree: ParsedRoute[] = useMemo(() => {
+    if (activeNode) {
+      const target = flatRoutes.find(
+        (route) =>
+          trimSrcPrefix(route.original.filePath) ===
+          trimSrcPrefix(activeNode.filePath)
+      );
+      return target ? [target] : hierarchicalTree;
+    }
+    return hierarchicalTree;
+  }, [activeNode, flatRoutes, hierarchicalTree]);
+
+  // 선택된 트리(또는 전체 트리)를 기반으로 Flow의 노드/엣지를 생성
   const { nodes, edges } = useMemo(() => {
     return verticalLayout
-      ? generateVerticalFlowElements(tree)
-      : generateHorizontalFlowElements(tree);
-  }, [tree, verticalLayout]);
+      ? generateVerticalFlowElementsFromTree(displayedTree)
+      : generateHorizontalFlowElementsFromTree(displayedTree);
+  }, [displayedTree, verticalLayout]);
 
   return (
-    <div
-      style={{ height: "600px", border: "1px solid #ddd", marginTop: "20px" }}
-    >
-      <ReactFlowProvider>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          fitView
-          minZoom={0.05}
-          maxZoom={10}
-          zoomOnScroll
-          zoomOnPinch
-          zoomOnDoubleClick
-        >
-          <Background />
-          <Controls />
-          <MiniMap />
-        </ReactFlow>
-      </ReactFlowProvider>
+    <div>
+      {activeNode && onBack && (
+        <button onClick={onBack} style={{ marginBottom: "8px" }}>
+          ← 뒤로가기
+        </button>
+      )}
+      <div
+        style={{ height: "600px", border: "1px solid #ddd", marginTop: "20px" }}
+      >
+        <ReactFlowProvider>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            fitView
+            minZoom={0.05} // 최대 5% 축소
+            maxZoom={10} // 최대 10배 확대
+            zoomOnScroll
+            zoomOnPinch
+            zoomOnDoubleClick
+          >
+            <Background />
+            <Controls />
+            <MiniMap />
+          </ReactFlow>
+        </ReactFlowProvider>
+      </div>
     </div>
   );
 };

@@ -26,7 +26,7 @@ const App: React.FC = () => {
     setSelectedNode(null);
   };
 
-  // 폴더 트리 네비게이션에서 노드를 클릭하면 해당 노드를 선택합니다.
+  // 폴더 트리(네비게이션)에서 노드를 클릭하면 해당 노드를 선택합니다.
   const handleNodeSelect = (node: ParsedComponent) => {
     setSelectedNode(node);
   };
@@ -35,7 +35,7 @@ const App: React.FC = () => {
     <div style={{ padding: "20px" }}>
       <h1>컴포넌트 트리 파싱 및 인터랙티브 시각화</h1>
       <FolderSelector onFolderSelected={handleFolderSelected} />
-      {/* 파싱된 트리가 있다면 상단에 폴더 트리 네비게이션 표시 */}
+      {/* 파싱된 트리가 있다면 폴더 트리(네비게이션)를 보여줍니다 */}
       {projectTree.length > 0 && (
         <div>
           <h3>폴더 트리 (네비게이션)</h3>
@@ -43,9 +43,9 @@ const App: React.FC = () => {
         </div>
       )}
       <h2>
-        {selectedNode ? `${selectedNode.name}의 하위 컴포넌트` : "전체 트리"}
+        {selectedNode ? `${selectedNode.name} (및 하위 컴포넌트)` : "전체 트리"}
       </h2>
-      {/* 전체 트리 또는 선택된 노드의 하위 트리만 ComponentFlow로 렌더링 */}
+      {/* 선택된 노드가 있으면 해당 노드를 포함하여 ComponentFlow에 전달 */}
       {projectTree.length > 0 && (
         <ComponentFlow
           tree={selectedNode ? [selectedNode] : projectTree}
