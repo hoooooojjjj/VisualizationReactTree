@@ -1,4 +1,5 @@
 # VisualizationReactTree
+https://www.codetriage.com/hoooooojjjj/visualizationreacttree/badges/users.svg
 
 <div align="center">
   <h1>VisualizationReactTree</h1>
