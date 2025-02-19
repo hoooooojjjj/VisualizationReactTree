@@ -1,0 +1,28 @@
+{
+  "name": "electron-react-tree",
+  "version": "1.0.0",
+  "description": "지금부터 컴포넌트 트리를 시각화하는 사이트를 만드는 대규모 React 프로젝트를 너와 함께 할거야. 기능은 다음과 같아",
+  "main": "main.js",
+  "scripts": {
+    "build": "webpack",
+    "start": "npm run build && electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "electron": "^VERSION",
+    "html-webpack-plugin": "^VERSION",
+    "ts-loader": "^VERSION",
+    "typescript": "^VERSION",
+    "webpack": "^VERSION",
+    "webpack-cli": "^VERSION"
+  },
+  "dependencies": {
+    "react": "^VERSION",
+    "react-dom": "^VERSION"
+  }
+}
