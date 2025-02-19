@@ -1,5 +1,5 @@
 # VisualizationReactTree
-https://www.codetriage.com/hoooooojjjj/visualizationreacttree/badges/users.svg
+[![Open in CodeTriage](https://www.codetriage.com/hoooooojjjj/visualizationreacttree/badges/users.svg)](https://www.codetriage.com/hoooooojjjj/visualizationreacttree)
 
 <div align="center">
   <h1>VisualizationReactTree</h1>
