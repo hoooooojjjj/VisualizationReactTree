@@ -182,9 +182,21 @@ const generateHorizontalFlowElementsFromTree = (
   return { nodes, edges };
 };
 
+const findRouteById = (
+  route: ParsedRoute,
+  targetId: string
+): ParsedRoute | null => {
+  if (route.id === targetId) return route;
+  for (const child of route.children) {
+    const found = findRouteById(child, targetId);
+    if (found) return found;
+  }
+  return null;
+};
+
 interface ComponentFlowProps {
   tree: ParsedComponent[]; // 전체 ParsedComponent 배열
-  activeNode?: ParsedComponent | null; // 부모에서 선택한 노드 (없으면 전체 트리 표시)
+  activeNode?: ParsedComponent | null; // 선택한 노드 (없으면 전체 트리 표시)
   onBack?: () => void; // Back 버튼 클릭 시 호출
   verticalLayout?: boolean;
 }
@@ -195,7 +207,7 @@ const ComponentFlow: React.FC<ComponentFlowProps> = ({
   onBack,
   verticalLayout = false,
 }) => {
-  // 전체 ParsedComponent 배열을 ParsedRoute 배열로 변환
+  // ParsedComponent 배열을 ParsedRoute 배열로 변환
   const convertedRoutes = useMemo(() => tree.map(convertToRoute), [tree]);
   const flatRoutes = useMemo(
     () => flattenRoutes(convertedRoutes),
@@ -206,18 +218,19 @@ const ComponentFlow: React.FC<ComponentFlowProps> = ({
     [flatRoutes]
   );
 
-  // activeNode prop이 있으면 해당 노드(filePath가 일치하는)의 서브트리만 사용합니다.
+  // 계층 트리(전체 트리)는 항상 [root] 배열로 반환됨
+  const fullHierarchy = hierarchicalTree[0];
+
+  // activeNode가 있을 경우, hierarchicalTree 내에서 해당 노드를 찾고 그 서브트리를 루트로 반환합니다.
   const displayedTree: ParsedRoute[] = useMemo(() => {
     if (activeNode) {
-      const target = flatRoutes.find(
-        (route) =>
-          trimSrcPrefix(route.original.filePath) ===
-          trimSrcPrefix(activeNode.filePath)
-      );
+      // activeNode의 filePath를 기반으로 한 id (trimSrcPrefix 적용)
+      const targetId = trimSrcPrefix(activeNode.filePath);
+      const target = findRouteById(fullHierarchy, targetId);
       return target ? [target] : hierarchicalTree;
     }
     return hierarchicalTree;
-  }, [activeNode, flatRoutes, hierarchicalTree]);
+  }, [activeNode, hierarchicalTree, fullHierarchy]);
 
   // 선택된 트리(또는 전체 트리)를 기반으로 Flow의 노드/엣지를 생성
   const { nodes, edges } = useMemo(() => {
@@ -241,8 +254,8 @@ const ComponentFlow: React.FC<ComponentFlowProps> = ({
             nodes={nodes}
             edges={edges}
             fitView
-            minZoom={0.05} // 최대 5% 축소
-            maxZoom={10} // 최대 10배 확대
+            minZoom={0.05}
+            maxZoom={10}
             zoomOnScroll
             zoomOnPinch
             zoomOnDoubleClick

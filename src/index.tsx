@@ -28,7 +28,12 @@ const App: React.FC = () => {
 
   // 폴더 트리(네비게이션)에서 노드를 클릭하면 해당 노드를 선택합니다.
   const handleNodeSelect = (node: ParsedComponent) => {
-    setSelectedNode(node);
+    // 선택된 노드와 그 하위 노드들을 포함하는 서브트리를 생성
+    const selectedSubtree: ParsedComponent = {
+      ...node,
+      children: node.children || [],
+    };
+    setSelectedNode(selectedSubtree);
   };
 
   return (
