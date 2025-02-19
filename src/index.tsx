@@ -13,15 +13,12 @@ const App: React.FC = () => {
 
   // 폴더 선택 후 IPC를 통해 파일 목록 읽기와 파싱을 진행합니다.
   const handleFolderSelected = async (folderPath: string) => {
-    console.log("선택된 폴더 경로:", folderPath);
     // IPC를 통해 폴더 내 파일 목록을 가져옵니다.
     const files: string[] = await window.electronAPI.readFolder(folderPath);
-    console.log("업로드된 파일 목록:", files);
     // 파일 목록을 기반으로 컴포넌트 트리를 파싱합니다.
     const tree: ParsedComponent[] = await window.electronAPI.parseProject(
       files
     );
-    console.log("파싱된 컴포넌트 트리:", tree);
     setProjectTree(tree);
     setSelectedNode(null);
   };
@@ -87,7 +84,7 @@ const App: React.FC = () => {
               color: "#4b5563",
             }}
           >
-            폴더 트리
+            Folder Tree
           </h3>
           <FolderTreeView tree={projectTree} onSelect={handleNodeSelect} />
         </div>
@@ -101,8 +98,8 @@ const App: React.FC = () => {
         }}
       >
         {selectedNode
-          ? `${selectedNode.name} 컴포넌트 트리`
-          : "전체 컴포넌트 트리"}
+          ? `${selectedNode.name} Component Tree`
+          : "All Component Tree"}
       </h2>
 
       {projectTree.length > 0 && (
@@ -125,6 +122,6 @@ const App: React.FC = () => {
 };
 
 const container = document.getElementById("root");
-if (!container) throw new Error("루트 요소가 존재하지 않습니다.");
+if (!container) throw new Error("Root element does not exist.");
 const root = ReactDOM.createRoot(container);
 root.render(<App />);

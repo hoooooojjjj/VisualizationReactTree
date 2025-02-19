@@ -112,17 +112,52 @@ const generateHorizontalFlowElementsFromTree = (
 ): { nodes: FlowNode[]; edges: FlowEdge[] } => {
   const nodes: FlowNode[] = [];
   const edges: FlowEdge[] = [];
-  let xCounter = 0;
   const xSpacing = 300;
   const ySpacing = 150;
 
-  const traverse = (node: ParsedRoute, depth: number) => {
+  // 각 레벨의 노드 수를 계산하는 함수
+  const calculateLevelWidths = (
+    node: ParsedRoute,
+    level: number,
+    levelWidths: Map<number, number>
+  ) => {
+    if (!levelWidths.has(level)) {
+      levelWidths.set(level, 0);
+    }
+    levelWidths.set(level, levelWidths.get(level)! + 1);
+    node.children.forEach((child) =>
+      calculateLevelWidths(child, level + 1, levelWidths)
+    );
+  };
+
+  // 레벨별 노드 수 계산
+  const levelWidths = new Map<number, number>();
+  nodesTree.forEach((root) => calculateLevelWidths(root, 0, levelWidths));
+
+  // 각 레벨의 시작 X 좌표를 계산
+  const levelStartX = new Map<number, number>();
+  levelWidths.forEach((width, level) => {
+    const levelWidth = (width - 1) * xSpacing;
+    levelStartX.set(level, -levelWidth / 2);
+  });
+
+  // 각 레벨의 현재 X 위치를 추적
+  const currentX = new Map<number, number>();
+
+  const traverse = (node: ParsedRoute, level: number) => {
+    if (!currentX.has(level)) {
+      currentX.set(level, levelStartX.get(level)!);
+    }
+
+    const x = currentX.get(level)!;
+    currentX.set(level, x + xSpacing);
+
     nodes.push({
       id: node.id,
       data: {
         label: node.id === "/" ? "/" : node.id.split("/").pop() || node.path,
       },
-      position: { x: xCounter * xSpacing, y: depth * ySpacing },
+      position: { x, y: level * ySpacing },
       style: {
         padding: "6px 12px",
         background: "#ffffff",
@@ -133,7 +168,7 @@ const generateHorizontalFlowElementsFromTree = (
         boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
       },
     });
-    xCounter++;
+
     node.children.forEach((child) => {
       edges.push({
         id: `${node.id}-${child.id}`,
@@ -142,7 +177,7 @@ const generateHorizontalFlowElementsFromTree = (
         animated: true,
         style: { stroke: "#1976d2", strokeWidth: 2 },
       });
-      traverse(child, depth + 1);
+      traverse(child, level + 1);
     });
   };
 
