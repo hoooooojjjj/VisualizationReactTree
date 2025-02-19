@@ -4,7 +4,6 @@
 
 1. 폴더 선택 버튼을 클릭하면 자신의 React or Next 루트 디렉토리를 업로드 한다.
 2. 업로드된 프로젝트의 컴포넌트 트리를 모두 읽어드려서 이를 다이어그램 트리 형태로 시각화 한다. 이때 각 노드들을 드래그할 수 있고, 전체 화면을 줌인 줌아웃 할수 있다. figjam과 같이 동작하면 된다. (참고 : @https://www.figma.com/ko-kr/figjam/@https://github.com/Common-LKP/reactree-frontend @https://github.com/naisutech/react-tree @https://github.com/oslabs-beta/ReacTree/ )
-3. 그리고 사용자는 직접 노드를 생성할 수 있다. 원하는 노드를 클릭하면 그 하위 노드를 생성할 수 있다. 그리고 해당 파일의 이름을 입력하면 "rfce"와 같은 react components 스니펫이 포함된 파일을 해당 노드(컴포넌트 파일) 하위에 생성해준다.
 
 깊게 고민한 다음에, 천천히 같이 해보자
 

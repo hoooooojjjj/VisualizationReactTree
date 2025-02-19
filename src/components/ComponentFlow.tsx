@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import ReactFlow, {
   ReactFlowProvider,
   Background,
@@ -6,6 +6,8 @@ import ReactFlow, {
   MiniMap,
   Node as RFNode,
   Edge as RFEdge,
+  applyNodeChanges,
+  NodeChange,
 } from "react-flow-renderer";
 import { ParsedComponent } from "../utils/parseProject";
 
@@ -239,6 +241,14 @@ const ComponentFlow: React.FC<ComponentFlowProps> = ({
       : generateHorizontalFlowElementsFromTree(displayedTree);
   }, [displayedTree, verticalLayout]);
 
+  // ReactFlow의 제어형(nodes controlled) 방식 사용:
+  const [flowNodes, setFlowNodes] = useState<FlowNode[]>(nodes);
+
+  // nodesWithPositions가 변경되면 flowNodes도 업데이트합니다.
+  useEffect(() => {
+    setFlowNodes(nodes);
+  }, [nodes]);
+
   return (
     <div>
       {activeNode && onBack && (
@@ -251,14 +261,22 @@ const ComponentFlow: React.FC<ComponentFlowProps> = ({
       >
         <ReactFlowProvider>
           <ReactFlow
-            nodes={nodes}
+            nodes={flowNodes}
             edges={edges}
+            onNodesChange={(changes: NodeChange[]) =>
+              setFlowNodes((nds) => applyNodeChanges(changes, nds))
+            }
             fitView
             minZoom={0.05}
             maxZoom={10}
             zoomOnScroll
             zoomOnPinch
             zoomOnDoubleClick
+            nodesDraggable={true}
+            nodesConnectable={false}
+            elementsSelectable={true}
+            multiSelectionKeyCode="Shift"
+            selectionKeyCode="Shift"
           >
             <Background />
             <Controls />
