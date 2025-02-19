@@ -37,25 +37,88 @@ const App: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>컴포넌트 트리 파싱 및 인터랙티브 시각화</h1>
-      <FolderSelector onFolderSelected={handleFolderSelected} />
-      {/* 파싱된 트리가 있다면 폴더 트리(네비게이션)를 보여줍니다 */}
+    <div
+      style={{
+        padding: "2rem",
+        maxWidth: "1200px",
+        margin: "0 auto",
+        fontFamily: "'Segoe UI', 'Roboto', sans-serif",
+        color: "#333",
+      }}
+    >
+      <h1
+        style={{
+          fontSize: "2.5rem",
+          marginBottom: "2rem",
+          color: "#2563eb",
+          borderBottom: "2px solid #e5e7eb",
+          paddingBottom: "1rem",
+        }}
+      >
+        Visualization React Tree
+      </h1>
+
+      <div
+        style={{
+          background: "#f8fafc",
+          padding: "2rem",
+          borderRadius: "0.5rem",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          marginBottom: "2rem",
+        }}
+      >
+        <FolderSelector onFolderSelected={handleFolderSelected} />
+      </div>
+
       {projectTree.length > 0 && (
-        <div>
-          <h3>폴더 트리 (네비게이션)</h3>
+        <div
+          style={{
+            background: "white",
+            padding: "2rem",
+            borderRadius: "0.5rem",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            marginBottom: "2rem",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: "1.5rem",
+              marginBottom: "1rem",
+              color: "#4b5563",
+            }}
+          >
+            폴더 트리
+          </h3>
           <FolderTreeView tree={projectTree} onSelect={handleNodeSelect} />
         </div>
       )}
-      <h2>
-        {selectedNode ? `${selectedNode.name} (및 하위 컴포넌트)` : "전체 트리"}
+
+      <h2
+        style={{
+          fontSize: "2rem",
+          marginBottom: "1.5rem",
+          color: "#1f2937",
+        }}
+      >
+        {selectedNode
+          ? `${selectedNode.name} 컴포넌트 트리`
+          : "전체 컴포넌트 트리"}
       </h2>
-      {/* 선택된 노드가 있으면 해당 노드를 포함하여 ComponentFlow에 전달 */}
+
       {projectTree.length > 0 && (
-        <ComponentFlow
-          tree={selectedNode ? [selectedNode] : projectTree}
-          verticalLayout
-        />
+        <div
+          style={{
+            background: "white",
+            padding: "2rem",
+            borderRadius: "0.5rem",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          }}
+        >
+          <ComponentFlow
+            tree={selectedNode ? [selectedNode] : projectTree}
+            verticalLayout
+          />
+        </div>
       )}
     </div>
   );

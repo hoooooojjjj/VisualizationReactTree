@@ -110,6 +110,54 @@ interface FolderTreeViewProps {
   onSelect: (node: ParsedComponent) => void;
 }
 
+// 모던한 스타일을 위한 인라인 스타일 객체들
+const styles = {
+  container: {
+    border: "1px solid #e0e0e0",
+    borderRadius: "8px",
+    padding: "16px",
+    margin: "16px 0",
+    width: "320px",
+    height: "400px",
+    overflowY: "auto" as "auto",
+    backgroundColor: "#ffffff",
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+  },
+  ul: {
+    listStyleType: "none" as "none",
+    paddingLeft: "16px",
+    margin: 0,
+  },
+  li: {
+    marginBottom: "4px",
+  },
+  nodeContainer: {
+    display: "flex",
+    alignItems: "center",
+    padding: "4px 8px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    transition: "background-color 0.2s ease",
+  },
+  nodeContainerHover: {
+    backgroundColor: "#f5f5f5",
+  },
+  icon: {
+    width: "16px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: "4px",
+    cursor: "pointer",
+    userSelect: "none" as "none",
+  },
+  text: {
+    fontSize: "14px",
+    color: "#333",
+    userSelect: "none" as "none",
+  },
+};
+
 const FolderTreeView: React.FC<FolderTreeViewProps> = ({ tree, onSelect }) => {
   // ParsedComponent 배열을 ParsedRoute로 변환 후 평탄화
   const convertedRoutes = useMemo(() => tree.map(convertToRoute), [tree]);
@@ -128,6 +176,9 @@ const FolderTreeView: React.FC<FolderTreeViewProps> = ({ tree, onSelect }) => {
   // 접힘/펼침 상태: 어떤 노드들이 확장되어 있는지를 추적합니다.
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
+  // 마우스 오버 상태 관리 (단순 예시: 각 노드에 대해 hover 효과 적용)
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+
   // 노드 클릭 시 onSelect 호출 (접힘/펼침 상태는 아이콘 클릭으로 제어)
   const handleNodeClick = (node: ParsedRoute) => {
     onSelect(node.original);
@@ -135,15 +186,26 @@ const FolderTreeView: React.FC<FolderTreeViewProps> = ({ tree, onSelect }) => {
 
   // 재귀적으로 트리 렌더링 (접힘/펼침 아이콘 포함)
   const renderTree = (nodes: ParsedRoute[]) => (
-    <ul style={{ listStyleType: "none", paddingLeft: "20px", margin: 0 }}>
+    <ul style={styles.ul}>
       {nodes.map((node, index) => {
         const hasChildren = node.children && node.children.length > 0;
         const isExpanded = expandedNodes.has(node.id);
+        const displayName =
+          node.id === "/" ? "/" : node.id.split("/").pop() || node.path;
         return (
-          <li key={`${node.id}-${index}`}>
-            <div style={{ display: "flex", alignItems: "center" }}>
+          <li key={`${node.id}-${index}`} style={styles.li}>
+            <div
+              style={{
+                ...styles.nodeContainer,
+                ...(hoveredNode === node.id ? styles.nodeContainerHover : {}),
+              }}
+              onMouseEnter={() => setHoveredNode(node.id)}
+              onMouseLeave={() => setHoveredNode(null)}
+              onClick={() => handleNodeClick(node)}
+            >
               {hasChildren && (
                 <div
+                  style={styles.icon}
                   onClick={(e) => {
                     e.stopPropagation();
                     setExpandedNodes((prev) => {
@@ -153,25 +215,11 @@ const FolderTreeView: React.FC<FolderTreeViewProps> = ({ tree, onSelect }) => {
                       return newSet;
                     });
                   }}
-                  style={{
-                    cursor: "pointer",
-                    width: "16px",
-                    userSelect: "none",
-                  }}
                 >
                   {isExpanded ? "▼" : "▶"}
                 </div>
               )}
-              <div
-                onClick={() => handleNodeClick(node)}
-                style={{
-                  marginLeft: hasChildren ? "4px" : "20px",
-                  cursor: "pointer",
-                  userSelect: "none",
-                }}
-              >
-                {node.id === "/" ? "/" : node.id.split("/").pop()}
-              </div>
+              <div style={styles.text}>{displayName}</div>
             </div>
             {hasChildren && isExpanded && renderTree(node.children)}
           </li>
@@ -185,18 +233,7 @@ const FolderTreeView: React.FC<FolderTreeViewProps> = ({ tree, onSelect }) => {
 
   return (
     <div>
-      <div
-        style={{
-          border: "1px solid #ccc",
-          padding: "8px",
-          margin: "8px 0",
-          width: "300px",
-          height: "400px",
-          overflow: "auto",
-        }}
-      >
-        {renderTree(treeToRender)}
-      </div>
+      <div style={styles.container}>{renderTree(treeToRender)}</div>
     </div>
   );
 };
